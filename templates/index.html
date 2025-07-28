@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBin API Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .endpoint {
+            margin: 20px 0;
+        }
+        .endpoint h2 {
+            color: #3498db;
+        }
+        .endpoint p {
+            margin: 10px 0;
+        }
+        .endpoint code {
+            background-color: #ecf0f1;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        /* Styling the tabs */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tabs button {
+            padding: 10px;
+            margin-right: 5px;
+            cursor: pointer;
+            border: none;
+            background-color: #3498db;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        .tabs button.active {
+            background-color: #2980b9;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .input-container {
+            margin: 20px 0;
+        }
+        input, select {
+            padding: 8px;
+            margin-right: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <h1>SmartBin API Documentation</h1>
+    <p>Welcome to the SmartBin API! Below you will find all the available endpoints with examples.</p>
+
+    <!-- Tabs for navigation -->
+    <div class="tabs">
+        <button class="tab-button active" onclick="showTab('binInfoTab')">BIN Info</button>
+        <button class="tab-button" onclick="showTab('countryTab')">Bins by Country</button>
+    </div>
+
+    <!-- BIN Info Tab Content -->
+    <div id="binInfoTab" class="tab-content active">
+        <div class="input-container">
+            <label for="bin_number">Enter BIN Number:</label>
+            <input type="text" id="bin_number" placeholder="Enter BIN Number">
+            <button onclick="fetchBinInfo()">Get BIN Info</button>
+        </div>
+        <div id="bin_info_result"></div>
+    </div>
+
+    <!-- Bins by Country Tab Content -->
+    <div id="countryTab" class="tab-content">
+        <div class="input-container">
+            <label for="country_code">Select Country Code:</label>
+            <select id="country_code">
+                <option value="US">US</option>
+                <option value="BD">BD</option>
+                <option value="IN">IN</option>
+                <!-- Add more country codes here -->
+            </select>
+            <label for="limit">Select Limit:</label>
+            <input type="number" id="limit" value="10" min="1" max="2000">
+            <button onclick="fetchBinsByCountry()">Get Bins</button>
+        </div>
+        <div id="country_info_result"></div>
+    </div>
+
+    <!-- API Documentation -->
+    <div class="endpoint">
+        <h2>/bin_info</h2>
+        <p><strong>Description:</strong> Get information for a specific BIN number.</p>
+        <p><strong>Example:</strong> <code>/bin_info?bin_number=123456</code></p>
+        <p><strong>Response:</strong> Returns details like the bank, country, brand, etc.</p>
+    </div>
+
+    <div class="endpoint">
+        <h2>/bins_by_country</h2>
+        <p><strong>Description:</strong> Get BINs based on a country code with an optional limit.</p>
+        <p><strong>Example:</strong> <code>/bins_by_country?country_code=BD&limit=100</code></p>
+        <p><strong>Response:</strong> Returns BINs for the specified country and limit.</p>
+    </div>
+
+    <script>
+        // Function to switch between tabs
+        function showTab(tabId) {
+            const tabs = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab-button');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            buttons.forEach(button => button.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Function to fetch BIN info
+        function fetchBinInfo() {
+            const binNumber = document.getElementById('bin_number').value;
+            fetch(`/bin_info?bin_number=${binNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data); // Check the entire API response
+
+                    // Check if bin_info is present in the response and it's an array
+                    if (data.bin_info && Array.isArray(data.bin_info) && data.bin_info.length > 0) {
+                        const binInfo = data.bin_info[0]; // Get the first item from the array
+
+                        document.getElementById('bin_info_result').innerHTML = `
+                            <h3>BIN Information:</h3>
+                            <p><strong>BIN:</strong> ${binInfo.bin || "Not available"}</p>
+                            <p><strong>Bank:</strong> ${binInfo.issuer || "Not available"}</p>
+                            <p><strong>Country Name:</strong> ${binInfo.Country.Name || "Not available"}</p>
+                            <p><strong>Country Code:</strong> ${binInfo.country_code || "Not available"}</p>
+                            <p><strong>Brand:</strong> ${binInfo.brand || "Not available"}</p>
+                            <p><strong>Category:</strong> ${binInfo.category || "Not available"}</p>
+                            <p><strong>Type:</strong> ${binInfo.type || "Not available"}</p>
+                            <p><strong>Website:</strong> ${binInfo.website || "Not available"}</p>
+                        `;
+                    } else {
+                        document.getElementById('bin_info_result').innerHTML = '<p>No BIN information found.</p>';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('bin_info_result').innerHTML = `<p>Error: ${error.message}</p>`;
+                });
+        }
+
+
+        // Function to fetch BINs by country
+        function fetchBinsByCountry() {
+            const countryCode = document.getElementById('country_code').value;
+            const limit = document.getElementById('limit').value;
+
+            // Call API to fetch BIN data by country
+            fetch(`/bins_by_country?country_code=${countryCode}&limit=${limit}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);  // Check the entire API response
+
+                    // Check if country_results are present in the response and it's an array
+                    if (data.country_results && Array.isArray(data.country_results) && data.country_results.length > 0) {
+                        let resultHTML = '<h3>BINs by Country:</h3>';
+
+                        // Loop through the country_results array to display each BIN's details
+                        data.country_results.forEach(bin => {
+                            resultHTML += `
+                                <p><strong>BIN:</strong> ${bin.bin || "Not available"}</p>
+                                <p><strong>Bank:</strong> ${bin.issuer || "Not available"}</p>
+                                <p><strong>Country Name:</strong> ${bin.Country.Name || "Not available"}</p>
+                                <p><strong>Country Code:</strong> ${bin.country_code || "Not available"}</p>
+                                <p><strong>Brand:</strong> ${bin.brand || "Not available"}</p>
+                                <p><strong>Category:</strong> ${bin.category || "Not available"}</p>
+                                <p><strong>Type:</strong> ${bin.type || "Not available"}</p>
+                                <p><strong>Phone:</strong> ${bin.phone || "Not available"}</p>
+                                <p><strong>Website:</strong> <a href="${bin.website || "#"}" target="_blank">${bin.website || "Not available"}</a></p>
+                                <hr />
+                            `;
+                        });
+
+                        // Display the result on the page
+                        document.getElementById('country_info_result').innerHTML = resultHTML;
+                    } else {
+                        document.getElementById('country_info_result').innerHTML = '<p>No BIN data found for the selected country.</p>';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('country_info_result').innerHTML = `<p>Error: ${error.message}</p>`;
+                });
+        }
+
+    </script>
+</body>
+</html>
